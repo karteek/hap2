@@ -139,20 +139,6 @@ func addSiteToList(c *cli.Context) {
 		return
 	}
 
-	if c.String("user") == "alice" {
-		if !c.Bool("force") {
-			fmt.Print("[Error] Username left as default value `alice`. If you mean it, use --force | -f to make this change\n")
-			return
-		}
-	}
-
-	if c.String("domain") == "foo.com" {
-		if !c.Bool("force") {
-			fmt.Print("[Error] Domain left as default value `foo.com`. If you mean it, use --force | -f to make this change\n")
-			return
-		}
-	}
-
 	sl := readSiteList(c)
 	s := site{}
 	s.User = c.String("user")
@@ -170,6 +156,20 @@ func addSiteToList(c *cli.Context) {
 		if !c.Bool("force") {
 			fmt.Printf("[Error] Site `%s` is already in the config file, use --force | -f flag to modify existing site\n", c.String("nick"))
 			return
+		}
+	} else {
+		if c.String("user") == "alice" {
+			if !c.Bool("force") {
+				fmt.Print("[Error] Username left as default value `alice`. If you mean it, use --force | -f to make this change\n")
+				return
+			}
+		}
+
+		if c.String("domain") == "foo.com" {
+			if !c.Bool("force") {
+				fmt.Print("[Error] Domain left as default value `foo.com`. If you mean it, use --force | -f to make this change\n")
+				return
+			}
 		}
 	}
 
