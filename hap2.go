@@ -43,12 +43,6 @@ func main() {
 	}
 	app.Commands = []cli.Command{
 		{
-			Name:      "list",
-			ShortName: "l",
-			Usage:     "List sites in hap2 config file",
-			Action:    listSites,
-		},
-		{
 			Name:      "site",
 			ShortName: "s",
 			Usage:     "Manage sites in the hap2 config file",
@@ -112,13 +106,19 @@ func main() {
 					},
 					Action: removeSiteFromList,
 				},
+				{
+					Name:      "list",
+					ShortName: "l",
+					Usage:     "List sites in hap2 config file",
+					Action:    listSites,
+				},
 			},
-			Action: listSites,
+			Action: func(c *cli.Context) {
+				cli.HelpPrinter(cli.SubcommandHelpTemplate, c.App)
+			},
 		},
 	}
-	app.Action = func(c *cli.Context) {
-		println("Main Place")
-	}
+	app.Action = generatePassword
 	app.Run(os.Args)
 }
 
@@ -154,20 +154,23 @@ func addSiteToList(c *cli.Context) {
 
 	if _, ok := sl.list[c.String("nick")]; ok {
 		if !c.Bool("force") {
-			fmt.Printf("[Error] Site `%s` is already in the config file, use --force | -f flag to modify existing site\n", c.String("nick"))
+			fmt.Printf("[Error] Site `%s` is already in the config file\n", c.String("nick"))
+			fmt.Println("Use --force | -f to modify the existing site or use --help | -h to see all the options")
 			return
 		}
 	} else {
 		if c.String("user") == "alice" {
 			if !c.Bool("force") {
-				fmt.Print("[Error] Username left as default value `alice`. If you mean it, use --force | -f to make this change\n")
+				fmt.Println("[Error] Username left as default value `alice`")
+				fmt.Println("Use --force | -f to modify the existing site or use --help | -h to see all the options")
 				return
 			}
 		}
 
 		if c.String("domain") == "foo.com" {
 			if !c.Bool("force") {
-				fmt.Print("[Error] Domain left as default value `foo.com`. If you mean it, use --force | -f to make this change\n")
+				fmt.Println("[Error] Domain left as default value `foo.com`")
+				fmt.Println("Use --force | -f to modify the existing site or use --help | -h to see all the options")
 				return
 			}
 		}
@@ -178,9 +181,15 @@ func addSiteToList(c *cli.Context) {
 	fmt.Printf("Added site `%s` with data `%s+%s@%s` to the config\n", c.String("nick"), c.String("user"), c.String("salt"), c.String("domain"))
 }
 
-func writeSiteList(slist *siteCollection) {
-	data, _ := json.Marshal(slist.list)
-	ioutil.WriteFile(SiteListFile, data, 0644)
+func removeSiteFromList(c *cli.Context) {
+	sl := readSiteList(c)
+	if _, ok := sl.list[c.String("nick")]; ok {
+		delete(sl.list, c.String("nick"))
+		writeSiteList(sl)
+		fmt.Printf("Deleted `%s` from config\n", c.String("nick"))
+	} else {
+		fmt.Printf("[Error] Site `%s` not preset in the config. Can't delete\n", c.String("nick"))
+	}
 }
 
 func listSites(c *cli.Context) {
@@ -191,13 +200,14 @@ func listSites(c *cli.Context) {
 	}
 }
 
-func removeSiteFromList(c *cli.Context) {
-	sl := readSiteList(c)
-	if _, ok := sl.list[c.String("nick")]; ok {
-		delete(sl.list, c.String("nick"))
-		writeSiteList(sl)
-		fmt.Printf("Deleted `%s` from config\n", c.String("nick"))
-	} else {
-		fmt.Printf("[Error] Site `%s` not preset in the config. Can't delete\n", c.String("nick"))
+func writeSiteList(slist *siteCollection) {
+	data, _ := json.Marshal(slist.list)
+	ioutil.WriteFile(SiteListFile, data, 0644)
+}
+
+func generatePassword(c *cli.Context) {
+	if len(c.Args()) != 1 {
+		fmt.Println("[Error] Cannot generate password without knowing the site nickname\n")
+		return
 	}
 }
