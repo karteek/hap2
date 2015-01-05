@@ -1,12 +1,18 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
-
-	"github.com/codegangsta/cli"
 	"os"
+
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/json"
+
+	"github.com/atotto/clipboard"
+	"github.com/codegangsta/cli"
+	"github.com/howeyc/gopass"
 )
 
 type site struct {
@@ -79,8 +85,8 @@ func main() {
 						},
 						cli.IntFlag{
 							Name:  "length",
-							Value: 12,
-							Usage: "Length of calculated password, default is 12",
+							Value: 14,
+							Usage: "Length of calculated password, default is 14",
 						},
 						cli.StringFlag{
 							Name:  "suffix",
@@ -118,7 +124,7 @@ func main() {
 			},
 		},
 	}
-	app.Action = generatePassword
+	app.Action = revealPassword
 	app.Run(os.Args)
 }
 
@@ -137,6 +143,14 @@ func addSiteToList(c *cli.Context) {
 	if len(c.String("nick")) < 3 {
 		fmt.Print("[Error] Site nickname should be atleast 3 characters\n")
 		return
+	}
+
+	if c.String("nick") == "test" {
+		if !c.Bool("force") {
+			fmt.Println("[Error] Site nick left as default value `test`")
+			fmt.Println("Use --force | -f to modify the existing site or use --help | -h to see all the options")
+			return
+		}
 	}
 
 	sl := readSiteList(c)
@@ -205,9 +219,40 @@ func writeSiteList(slist *siteCollection) {
 	ioutil.WriteFile(SiteListFile, data, 0644)
 }
 
-func generatePassword(c *cli.Context) {
+func revealPassword(c *cli.Context) {
 	if len(c.Args()) != 1 {
 		fmt.Println("[Error] Cannot generate password without knowing the site nickname\n")
 		return
 	}
+
+	nick := c.Args().First()
+	sl := readSiteList(c)
+	if s, ok := sl.list[nick]; ok {
+		if len(s.Notes) > 0 {
+			fmt.Printf("Notes: %s\n", s.Notes)
+		}
+		fmt.Printf("Enter Master password. Hit enter to abort: ")
+		masterPass := string(gopass.GetPasswdMasked()[:])
+		if len(masterPass) == 0 {
+			return
+		}
+		fmt.Printf("Computing password for %s <%s+%s@%s>\n", nick, s.User, s.Salt, s.Domain)
+		password := generatePassword(s, masterPass)
+		clipboard.WriteAll(password)
+		fmt.Println(password, "copied to your clipboard")
+
+	} else {
+		fmt.Printf("[Error] Requested site `%s` not found the config. Adding it first using `site add`\n", nick)
+	}
+}
+
+func generatePassword(s site, masterPassword string) string {
+	key := []byte(masterPassword)
+	h := hmac.New(sha256.New, key)
+	h.Write([]byte(fmt.Sprintf("%s+%s@%s", s.User, s.Salt, s.Domain)))
+	pass := base64.StdEncoding.EncodeToString(h.Sum(nil))[:s.Length]
+	if len(s.Suffix) > 0 {
+		pass = pass + s.Suffix
+	}
+	return pass
 }

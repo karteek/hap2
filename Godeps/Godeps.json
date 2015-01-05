@@ -3,9 +3,22 @@
 	"GoVersion": "go1.4",
 	"Deps": [
 		{
+			"ImportPath": "code.google.com/p/go.crypto/ssh/terminal",
+			"Comment": "null-185",
+			"Rev": "6478cc9340cbbe6c04511280c5007722269108e9"
+		},
+		{
+			"ImportPath": "github.com/atotto/clipboard",
+			"Rev": "fd495c12601af1395874d8d50a6c57ba890a3661"
+		},
+		{
 			"ImportPath": "github.com/codegangsta/cli",
 			"Comment": "1.2.0-50-ga14c5b4",
 			"Rev": "a14c5b47c7efa4ff80cc42e1079a34b4756f2311"
+		},
+		{
+			"ImportPath": "github.com/howeyc/gopass",
+			"Rev": "4cf66881dcc3d6f0071eb6473d95c39e460de696"
 		}
 	]
 }
