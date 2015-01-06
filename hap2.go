@@ -215,7 +215,7 @@ func listSites(c *cli.Context) {
 }
 
 func writeSiteList(slist *siteCollection) {
-	data, _ := json.Marshal(slist.list)
+	data, _ := json.MarshalIndent(slist.list, "", "    ")
 	ioutil.WriteFile(SiteListFile, data, 0644)
 }
 
