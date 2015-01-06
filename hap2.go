@@ -16,13 +16,14 @@ import (
 )
 
 type site struct {
-	User   string `json:"user"`
-	Salt   string `json:"salt"`
-	Domain string `json:"domain"`
-	Length int    `json:"length"`
-	Suffix string `json:"suffix"`
-	Notes  string `json:"notes"`
-	// check  string `json:"check"`
+	User     string `json:"user"`
+	Salt     string `json:"salt"`
+	Domain   string `json:"domain"`
+	Length   int    `json:"length"`
+	Suffix   string `json:"suffix"`
+	Notes    string `json:"notes"`
+	Security string `json:"security"`
+	Check    string `json:"check"`
 }
 
 type siteCollection struct {
@@ -95,6 +96,14 @@ func main() {
 						cli.StringFlag{
 							Name:  "notes",
 							Usage: "Notes for the site [optional]",
+						},
+						cli.StringFlag{
+							Name:  "security",
+							Usage: "Security note for the site [optional]",
+						},
+						cli.StringFlag{
+							Name:  "check",
+							Usage: "Password Check for the site [optional]",
 						},
 					},
 					Action: addSiteToList,
@@ -231,6 +240,9 @@ func revealPassword(c *cli.Context) {
 		if len(s.Notes) > 0 {
 			fmt.Printf("Notes: %s\n", s.Notes)
 		}
+		if len(s.Security) > 0 {
+			fmt.Printf("Security: %s\n", s.Security)
+		}
 		fmt.Printf("Enter Master password. Hit enter to abort: ")
 		masterPass := string(gopass.GetPasswdMasked()[:])
 		if len(masterPass) == 0 {
@@ -253,6 +265,19 @@ func generatePassword(s site, masterPassword string) string {
 	pass := base64.StdEncoding.EncodeToString(h.Sum(nil))[:s.Length]
 	if len(s.Suffix) > 0 {
 		pass = pass + s.Suffix
+	}
+
+	ch := sha256.New()
+	ch.Write([]byte(pass))
+	check := base64.StdEncoding.EncodeToString(ch.Sum(nil))
+
+	if len(s.Check) > 0 {
+		if s.Check != check {
+			fmt.Println("[error] Check value mismatch; Wrong master password entered")
+			os.Exit(1)
+		}
+	} else {
+		fmt.Printf("Check not found in the config. Consider adding `%s`\n to config", check)
 	}
 	return pass
 }
