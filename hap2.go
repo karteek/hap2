@@ -71,7 +71,7 @@ func main() {
 						},
 						cli.StringFlag{
 							Name:  "user",
-							Value: "alice",
+							Value: "test",
 							Usage: "Username for the site",
 						},
 						cli.StringFlag{
@@ -81,7 +81,7 @@ func main() {
 						},
 						cli.StringFlag{
 							Name:  "domain",
-							Value: "foo.com",
+							Value: "example.com",
 							Usage: "Domain name which is being added",
 						},
 						cli.IntFlag{
@@ -163,45 +163,51 @@ func addSiteToList(c *cli.Context) {
 	}
 
 	sl := readSiteList(c)
-	s := site{}
-	s.User = c.String("user")
-	s.Salt = c.String("salt")
-	s.Domain = c.String("domain")
-	s.Length = c.Int("length")
-	s.Suffix = c.String("suffix")
-	s.Notes = c.String("notes")
 
 	if sl.list == nil {
 		sl.list = make(map[string]site)
 	}
 
+	var s site
 	if _, ok := sl.list[c.String("nick")]; ok {
 		if !c.Bool("force") {
 			fmt.Printf("[Error] Site `%s` is already in the config file\n", c.String("nick"))
 			fmt.Println("Use --force | -f to modify the existing site or use --help | -h to see all the options")
 			return
 		}
+		s = sl.list[c.String("nick")]
 	} else {
-		if c.String("user") == "alice" {
-			if !c.Bool("force") {
-				fmt.Println("[Error] Username left as default value `alice`")
-				fmt.Println("Use --force | -f to modify the existing site or use --help | -h to see all the options")
-				return
-			}
-		}
+		s = site{}
+	}
 
-		if c.String("domain") == "foo.com" {
-			if !c.Bool("force") {
-				fmt.Println("[Error] Domain left as default value `foo.com`")
-				fmt.Println("Use --force | -f to modify the existing site or use --help | -h to see all the options")
-				return
-			}
-		}
+	if c.String("user") != "test" || len(s.User) == 0 {
+		s.User = c.String("user")
+	}
+	if c.String("salt") != "1" || len(s.Salt) == 0 {
+		s.Salt = c.String("salt")
+	}
+	if c.String("domain") != "example.com" || len(s.Domain) == 0 {
+		s.Domain = c.String("domain")
+	}
+	if c.Int("length") != 14 || s.Length == 0 {
+		s.Length = c.Int("length")
+	}
+	if len(c.String("suffix")) > 0 {
+		s.Suffix = c.String("suffix")
+	}
+	if len(c.String("notes")) > 0 {
+		s.Notes = c.String("notes")
+	}
+	if len(c.String("security")) > 0 {
+		s.Security = c.String("security")
+	}
+	if len(c.String("check")) > 0 {
+		s.Check = c.String("check")
 	}
 
 	sl.list[c.String("nick")] = s
 	writeSiteList(sl)
-	fmt.Printf("Added site `%s` with data `%s+%s@%s` to the config\n", c.String("nick"), c.String("user"), c.String("salt"), c.String("domain"))
+	fmt.Printf("Added site `%s` with data `%s+%s@%s` to the config\n", c.String("nick"), s.User, s.Salt, s.Domain)
 }
 
 func removeSiteFromList(c *cli.Context) {
@@ -277,7 +283,7 @@ func generatePassword(s site, masterPassword string) string {
 			os.Exit(1)
 		}
 	} else {
-		fmt.Printf("Check not found in the config. Consider adding `%s`\n to config", check)
+		fmt.Printf("Check not found in the config. Consider adding `%s` to config\n", check)
 	}
 	return pass
 }
