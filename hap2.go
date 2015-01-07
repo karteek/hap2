@@ -31,7 +31,6 @@ type siteCollection struct {
 }
 
 var SiteListFile string
-var sitelist siteCollection
 
 func main() {
 	SiteListFile = fmt.Sprintf("%s/.config/hap2.sitelist.json", os.Getenv("HOME"))
