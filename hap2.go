@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"sort"
 
 	"crypto/hmac"
 	"crypto/sha256"
@@ -223,7 +224,14 @@ func removeSiteFromList(c *cli.Context) {
 func listSites(c *cli.Context) {
 	fmt.Println("List of sites in the config")
 	sl := readSiteList(c)
-	for key, _ := range sl.list {
+
+	keys := []string{}
+	for key := range sl.list {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	for _, key := range keys {
 		fmt.Printf("%s => %s+%s@%s\n", key, sl.list[key].User, sl.list[key].Salt, sl.list[key].Domain)
 	}
 }
